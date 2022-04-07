@@ -36,14 +36,35 @@ void v_add_naive(double *x, double *y, double *z) {
 
 // Adjacent Method
 void v_add_optimized_adjacent(double *x, double *y, double *z) {
-  // TODO: Implement this function
-  // Do NOT use the `for` directive here!
+#pragma omp parallel
+  {
+    int thread_id = omp_get_thread_num();
+    int sum = omp_get_num_threads();
+
+    for (int i = thread_id; i < ARRAY_SIZE; i += sum) {
+      z[i] = x[i] + y[i];
+    }
+  }
 }
 
 // Chunks Method
 void v_add_optimized_chunks(double *x, double *y, double *z) {
-  // TODO: Implement this function
-  // Do NOT use the `for` directive here!
+#pragma omp parallel
+  {
+    int thread_id = omp_get_thread_num();
+    int sum = omp_get_num_threads();
+    int chunk = ARRAY_SIZE / sum;
+
+    if (thread_id != sum - 1) {
+      for (int i = thread_id * chunk; i < (thread_id + 1) * chunk; ++i) {
+        z[i] = x[i] + y[i];
+      }
+    } else {
+      for (int i = thread_id * chunk; i < ARRAY_SIZE; ++i) {
+        z[i] = x[i] + y[i];
+      }
+    }
+  }
 }
 
 /* -------------------------------Dot Product------------------------------*/
@@ -62,16 +83,35 @@ double dotp_naive(double *x, double *y, int arr_size) {
 // Manual Reduction
 double dotp_manual_optimized(double *x, double *y, int arr_size) {
   double global_sum = 0.0;
-  // TODO: Implement this function
-  // Do NOT use the `reduction` directive here!
+
+#pragma omp parallel
+  {
+    double partial = 0.0;
+    int thread_id = omp_get_thread_num();
+    int sum = omp_get_num_threads();
+    int chunk = arr_size / sum;
+
+    for (int i = chunk * thread_id;
+         i < (thread_id != sum - 1 ? chunk * (thread_id + 1) : arr_size); ++i) {
+      partial += x[i] * y[i];
+    }
+
+#pragma omp critical
+    global_sum += partial;
+  }
+
   return global_sum;
 }
 
 // Reduction Keyword
 double dotp_reduction_optimized(double *x, double *y, int arr_size) {
   double global_sum = 0.0;
-  // TODO: Implement this function
-  // Please DO use the `reduction` directive here!
+#pragma omp parallel
+  {
+#pragma omp for reduction(+ : global_sum)
+    for (int i = 0; i < arr_size; i++)
+      global_sum += x[i] * y[i];
+  }
   return global_sum;
 }
 
