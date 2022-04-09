@@ -5,4 +5,4 @@
 - [x] lab08
 - [x] lab09
 ---
-- [ ] proj3
+- [x] proj3-partA
